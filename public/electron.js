@@ -8,10 +8,12 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 580,
     height: 570,
+    icon: path.join(__dirname, "./favicon.ico"),
     webPreferences: {
       nodeIntegration: true,
       enableRemoteModule: true,
       devTools: isDev,
+      preload: path.join(__dirname, "../src/preload.ts"),
     },
   });
   mainWindow.removeMenu();
