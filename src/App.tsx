@@ -43,6 +43,12 @@ function App() {
 
   const readUploadFile = (event: any) => {
     event.preventDefault();
+
+    const regex = new RegExp("(.*?)\.(xlsx|xls|csv)$");
+    if (!regex.test(event.target.files[0].name)) {
+      alert("해당 종류의 파일은 업로드할 수 없습니다.");
+      return false;
+    }
     if (event.target.files) {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -95,6 +101,8 @@ function App() {
         setLists(filteredlists)
       };
       reader.readAsArrayBuffer(event.target.files[0]);
+      const excelText = document.getElementById('excelFileText')! as HTMLInputElement
+      excelText.value = event.target.files[0].name
       event.target.value = '';
     }
   }
@@ -144,7 +152,9 @@ function App() {
             <div className='inputWrap'>
               <label htmlFor="excelFile">{lists?.length ? `총 계약 수 : ${lists?.length} 건` : '사용할 엑셀파일을 찾아주세요.'}</label>
               <p>
-                <input type="text" name="excelFileText" id="excelFileText" /><button type='button'>파일 찾기</button>
+                <input type="text" name="excelFileText" id="excelFileText" readOnly /><button type='button' onClick={
+                  () => document.getElementById('excelFile')?.click()
+                }>파일 찾기</button>
               </p>
               <input hidden type="file" name='excelFile' id='excelFile' onChange={readUploadFile} accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" />
             </div>
