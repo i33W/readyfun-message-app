@@ -7,9 +7,43 @@
   "main": "public/electron.js",
   "homepage": "./",
   "build": {
-    "productName": "electron-test-app",
+    "productName": "레디펀 메시지 작성 프로그램",
     "asar": true,
-    "appId": "org.cpro95.electron-test-app"
+    "appId": "com.github.i33w.readyfun-message-app",
+    "win": {
+      "target": "nsis",
+      "icon": "./public/logo256.png"
+    },
+    "nsis": {
+      "createDesktopShortcut": "always",
+      "oneClick": true,
+      "perMachine": true,
+      "language": 1042,
+      "shortcutName": "레디펀 메시지 작성 프로그램",
+      "include": "./installer.nsh"
+    },
+    "files": [
+      "!.vscode${/*}"
+    ],
+    "directories": {
+      "output": "./dist/"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "i33w",
+        "repo": "readyfun-message-app"
+      }
+    ]
+  },
+  "scripts": {
+    "react-start": "react-scripts start",
+    "react-build": "react-scripts build",
+    "react-test": "react-scripts test",
+    "react-eject": "react-scripts eject",
+    "start": "concurrently \"cross-env NODE_ENV=development BROWSER=none PORT=9999 npm run react-start\" \"wait-on http://localhost:9999 && electron .\"",
+    "build": "npm run react-build && electron-builder",
+    "release": "npm run react-build && electron-builder --publish=always"
   },
   "dependencies": {
     "@testing-library/jest-dom": "^5.17.0",
@@ -19,22 +53,15 @@
     "@types/node": "^16.18.68",
     "@types/react": "^18.2.45",
     "@types/react-dom": "^18.2.17",
+    "convert-excel-to-json": "^1.7.0",
     "electron-is-dev": "^2.0.0",
+    "node-excel-to-json": "^0.0.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-scripts": "5.0.1",
     "typescript": "^4.9.5",
     "web-vitals": "^2.1.4",
     "xlsx": "^0.18.5"
-  },
-  "scripts": {
-    "react-start": "react-scripts start",
-    "react-build": "react-scripts build",
-    "react-test": "react-scripts test",
-    "react-eject": "react-scripts eject",
-    "start": "concurrently \"cross-env NODE_ENV=development BROWSER=none npm run react-start\" \"wait-on http://localhost:3000 && electron .\"",
-    "build": "react-build && electron-builder",
-    "release": "react-build && electron-builder --publish=always"
   },
   "eslintConfig": {
     "extends": [
@@ -55,6 +82,7 @@
     ]
   },
   "devDependencies": {
+    "@types/convert-excel-to-json": "^1.7.4",
     "concurrently": "^8.2.2",
     "cross-env": "^7.0.3",
     "electron": "^28.0.0",

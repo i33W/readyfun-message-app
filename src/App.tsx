@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import './App.css';
-import * as xlsx from 'xlsx'
-import Toastify from 'toastify-js'
+import * as XLSX from 'xlsx'
 
 type readyFunData = {
   "일자": any,
@@ -37,6 +36,45 @@ function valid(list: readyFunData) {
   if (!list["만기일"]) return "만기일"
   return ''
 }
+function excelSerialDateToJSDate(excelSerialDate: any) {
+  // "Excel serial date" is just
+  // the count of days since `01/01/1900`
+  // (seems that it may be even fractional).
+  //
+  // The count of days elapsed
+  // since `01/01/1900` (Excel epoch)
+  // till `01/01/1970` (Unix epoch).
+  // Accounts for leap years
+  // (19 of them, yielding 19 extra days).
+  const daysBeforeUnixEpoch = 70 * 365 + 19;
+
+  // An hour, approximately, because a minute
+  // may be longer than 60 seconds, see "leap seconds".
+  const hour = 60 * 60 * 1000;
+
+  // "In the 1900 system, the serial number 1 represents January 1, 1900, 12:00:00 a.m.
+  //  while the number 0 represents the fictitious date January 0, 1900".
+  // These extra 12 hours are a hack to make things
+  // a little bit less weird when rendering parsed dates.
+  // E.g. if a date `Jan 1st, 2017` gets parsed as
+  // `Jan 1st, 2017, 00:00 UTC` then when displayed in the US
+  // it would show up as `Dec 31st, 2016, 19:00 UTC-05` (Austin, Texas).
+  // That would be weird for a website user.
+  // Therefore this extra 12-hour padding is added
+  // to compensate for the most weird cases like this
+  // (doesn't solve all of them, but most of them).
+  // And if you ask what about -12/+12 border then
+  // the answer is people there are already accustomed
+  // to the weird time behaviour when their neighbours
+  // may have completely different date than they do.
+  //
+  // `Math.round()` rounds all time fractions
+  // smaller than a millisecond (e.g. nanoseconds)
+  // but it's unlikely that an Excel serial date
+  // is gonna contain even seconds.
+  //
+  return new Date(Math.round((excelSerialDate - daysBeforeUnixEpoch) * 24 * hour) + 12 * hour);
+};
 
 function App() {
   const [lists, setLists] = useState<Array<any>>()
@@ -61,15 +99,89 @@ function App() {
       alert("해당 종류의 파일은 업로드할 수 없습니다.");
       return false;
     }
-    if (event.target.files) {
+
+    if (event.target.files[0].name.split('.').pop() === 'xls') {
       const reader = new FileReader();
       reader.onload = (e) => {
         const data = e.target?.result;
-        const workbook = xlsx.read(data, { type: "array", cellDates: true, dateNF: 'yyyy-mm-dd' });
+        const workbook = XLSX.read(data, { type: "binary", cellDates: true, dateNF: 'yyyy-mm-dd' });
+
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        const json: readyFunDataList = xlsx.utils.sheet_to_json(worksheet);
+        const txt = XLSX.utils.sheet_to_txt(worksheet).replaceAll('"<', '<').replaceAll('>"', '>').replaceAll('""', '"')
+        const tempDiv = document.createElement('div') as HTMLDivElement
+        tempDiv.innerHTML = txt
+        const tempTable = tempDiv.querySelector('table')
+        const sheet = XLSX.utils.table_to_sheet(tempTable)
+        const json: readyFunDataList = XLSX.utils.sheet_to_json(sheet)
 
+        // 파일 확인
+        const notValid = valid(json[0])
+        if (notValid !== '') {
+          alert(`"${notValid}" 열이 없는 잘못된 파일입니다.`)
+          setLists([])
+          event.target.value = '';
+          return;
+        }
+
+        // 일자 Date type으로 수정
+        const filteredJson = json.map((item => {
+          item['만기일'] = excelSerialDateToJSDate(item['만기일'])
+          item['일자'] = new Date(Number(new Date().getFullYear().toString().substring(0, 2)) + item['일자'].split('/')[0], item['일자'].split('/')[1] - 1, item['일자'].split('/')[2])
+          return item
+        }))
+        // 금액 Number type으로 수정
+
+
+        // 계약번호 중복 제거
+        let ids = [...new Set(filteredJson?.map((item) => item['계약번호']))]
+        // 각 계약번호 별 최신 일자 데이터 추출
+        let filteredlists = (ids.map((id) => {
+          const sorted = filteredJson.filter((item) => item['계약번호'] === id).sort((a, b) => (new Date(b['일자']).getTime()) - (new Date(a['일자']).getTime())).map(val => {
+            val['수익금'] = Number(val['수익금'].replaceAll(',', '').split('원')[0])
+            val['실지급액'] = Number(val['실지급액'].replaceAll(',', '').split('원')[0])
+            val['투자금액'] = Number(val['투자금액'].replaceAll(',', '').split('원')[0])
+            return val
+          })
+          let temp = sorted[0]
+          Array(sorted.length - 1).fill(null).map((val, idx) => {
+            if (idx !== sorted.length) temp['수익금'] = temp['수익금'] + sorted[idx + 1]['수익금']
+            if (idx !== sorted.length) temp['실지급액'] = temp['실지급액'] + sorted[idx + 1]['실지급액']
+            if (idx !== sorted.length) temp['투자금액'] = temp['투자금액'] + sorted[idx + 1]['투자금액']
+          })
+          return temp
+        }
+        ))
+        filteredlists = filteredlists.map<any>(list => {
+          // const date1 = new Date(list['일자'])
+          // const date2 = new Date(list['만기일'])
+          // date1.setDate(new Date(list['일자']).getDate() + 1)
+          // date2.setDate(new Date(list['만기일']).getDate() + 1)
+          list['일자'] = list['일자'].toISOString().split('T')[0]
+          list['만기일'] = list['만기일'].toISOString().split('T')[0]
+
+          list['수익금'] = list['수익금'].toLocaleString()
+          list['실지급액'] = list['실지급액'].toLocaleString()
+          list['투자금액'] = list['투자금액'].toLocaleString()
+          return list
+        })
+        setLists(filteredlists)
+      }
+      reader.readAsText(event.target.files[0]);
+      const excelText = document.getElementById('excelFileText')! as HTMLInputElement
+      excelText.value = event.target.files[0].name
+      event.target.value = '';
+    }
+    else if (event.target.files[0].name.split('.').pop() === 'xlsx') {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const data = e.target?.result;
+        const workbook = XLSX.read(data, { type: "array", cellDates: true, dateNF: 'yyyy-mm-dd' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const json: readyFunDataList = XLSX.utils.sheet_to_json(worksheet);
+
+        // 파일 확인
         const notValid = valid(json[0])
         if (notValid !== '') {
           alert(`"${notValid}" 열이 없는 잘못된 파일입니다.`)
@@ -121,6 +233,8 @@ function App() {
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const textElement = document.getElementById('text')! as HTMLTextAreaElement
+    textElement.value = ''
     const formData = new FormData(document.forms[0])
 
     const filteredLists = lists?.map((item) => {
