@@ -15,6 +15,7 @@ function createWindow() {
       devTools: isDev,
       preload: path.join(__dirname, "../src/preload.ts"),
     },
+    resizable: false,
   });
   mainWindow.removeMenu();
 
