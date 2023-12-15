@@ -2,7 +2,7 @@ html, body {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background-color: #F5F5F5;
+  background-color: #F2F2F7;
 }
 
 #wrap {
@@ -58,8 +58,92 @@ html, body {
 .inputWrap button {
   padding: 0.6rem 0;
   cursor: pointer;
+  background-color: #E5E5EA;
 }
 
 * {
   font-size: 0.9rem;
+}
+
+#copyBtn {
+  font-size: 0.9rem;
+  position: absolute;
+  right: 4.6vw;
+  bottom: 16.8vh;
+  padding: 0.5rem;
+  cursor: pointer;
+  background-color: #E5E5EA;
+  border: 1px solid silver;
+  border-radius: 2px;
+}
+
+#snackbar {
+  visibility: hidden;
+  min-width: 100px;
+  margin-left: -50px;
+  background-color: #D9EBFF;
+  color: #007AFF;
+  text-align: center;
+  border-radius: 4rem;
+  padding: 8px;
+  position: fixed;
+  z-index: 1;
+  left: 50%;
+  top: 20px;
+}
+
+/* Show the snackbar when clicking on a button (class added with JavaScript) */
+#snackbar.show {
+  visibility: visible;
+  -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+  animation: fadein 0.5s, fadeout 0.5s 2.5s;
+}
+
+/* Animations to fade the snackbar in and out */
+@-webkit-keyframes fadein {
+  from {
+    top: 0;
+    opacity: 0;
+  }
+
+  to {
+    top: 20px;
+    opacity: 1;
+  }
+}
+
+@keyframes fadein {
+  from {
+    top: 0;
+    opacity: 0;
+  }
+
+  to {
+    top: 20px;
+    opacity: 1;
+  }
+}
+
+@-webkit-keyframes fadeout {
+  from {
+    top: 20px;
+    opacity: 1;
+  }
+
+  to {
+    top: 0;
+    opacity: 0;
+  }
+}
+
+@keyframes fadeout {
+  from {
+    top: 20px;
+    opacity: 1;
+  }
+
+  to {
+    top: 0;
+    opacity: 0;
+  }
 }

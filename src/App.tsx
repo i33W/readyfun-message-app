@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import './App.css';
 import * as xlsx from 'xlsx'
+import Toastify from 'toastify-js'
 
 type readyFunData = {
   "일자": any,
@@ -44,7 +45,18 @@ function App() {
   const readUploadFile = (event: any) => {
     event.preventDefault();
 
-    const regex = new RegExp("(.*?)\.(xlsx|xls|csv)$");
+    setLists([])
+    setSearchedLists([])
+    const nameElement = document.getElementById('name')! as HTMLInputElement
+    const dateElement = document.getElementById('date')! as HTMLInputElement
+    const resultsElement = document.getElementById('results')! as HTMLSelectElement
+    const textElement = document.getElementById('text')! as HTMLTextAreaElement
+    nameElement.value = ''
+    dateElement.value = ''
+    resultsElement.innerHTML = "<option value=''>선택</option>"
+    textElement.value = ''
+
+    const regex = new RegExp("(.*?).(xlsx|xls|csv)$");
     if (!regex.test(event.target.files[0].name)) {
       alert("해당 종류의 파일은 업로드할 수 없습니다.");
       return false;
@@ -138,15 +150,30 @@ function App() {
 - 납입회차: ${selected['납입회차'].replace('회차', ' 회차')}
 - 수익금: ${selected['수익금']} 원
 - 실지급액: ${selected['실지급액']} 원`
-      document.getElementById('text')!.textContent = msg
+      const addText = document.getElementById('addText')! as HTMLTextAreaElement
+      const text = document.getElementById('text')! as HTMLTextAreaElement
+      text.value = msg + '\n\n' + addText.value
     } else {
       document.getElementById('text')!.textContent = ''
     }
   }
 
+  const handleCopy = (e: any) => {
+    const text = document.getElementById('text')! as HTMLTextAreaElement
+    window.navigator.clipboard.writeText(text.value)
+
+
+    var x = document.getElementById("snackbar")!;
+    x.className = "show";
+    setTimeout(function () { x.className = x.className.replace("show", ""); }, 1000);
+
+  }
+
   return (
     <div className="App">
       <div id='wrap'>
+        <button type='button' id='copyBtn' onClick={handleCopy}>복사</button>
+        <div id="snackbar">복사되었습니다.</div>
         <form method="post" onSubmit={handleSubmit}>
           <div id='top'>
             <div className='inputWrap'>
@@ -171,7 +198,7 @@ function App() {
               </div>
               <div className='inputWrap'>
                 <label htmlFor="results">계약 수: {searchedLists?.length}</label>
-                <select name="results" id="results" size={11} onChange={handleSelect} >
+                <select name="results" id="results" size={4} onChange={handleSelect} >
                   <option value=''>선택</option>
                   {
                     searchedLists?.map(item => {
@@ -180,11 +207,15 @@ function App() {
                   }
                 </select>
               </div>
+              <div className='inputWrap'>
+                <label htmlFor="addText">비고</label>
+                <textarea name='addText' id='addText' rows={8}></textarea>
+              </div>
             </div>
             <div id='right'>
-              <div className='inputWrap'>
+              <div className='inputWrap' style={{ marginBottom: 0 }}>
                 <label htmlFor="text">결과</label>
-                <textarea name='text' id='text' rows={20}></textarea>
+                <textarea name='text' id='text' style={{ height: '61vh' }}></textarea>
               </div>
             </div>
           </div>
