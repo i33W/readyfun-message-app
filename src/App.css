@@ -99,6 +99,15 @@ html, body {
   animation: fadein 0.5s, fadeout 0.5s 2.5s;
 }
 
+#snackbar.show2 {
+  visibility: visible;
+  -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+  animation: fadein 0.5s, fadeout 0.5s 2.5s;
+
+  background-color: #FFDADB;
+  color: #400008;
+}
+
 /* Animations to fade the snackbar in and out */
 @-webkit-keyframes fadein {
   from {
@@ -146,4 +155,11 @@ html, body {
     top: 0;
     opacity: 0;
   }
+}
+
+.highlight {
+  box-sizing: border-box;
+  border-radius: 4px;
+  background-color: #C2E7FF;
+  border: 3px dashed #007AFF;
 }
