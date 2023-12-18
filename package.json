@@ -5,13 +5,13 @@
   "description": "readyfun message app",
   "author": "i33w",
   "main": "public/electron.js",
-  "homepage": "https://github.com/i33W/readyfun-message-app",
+  "homepage": "./",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/i33W/readyfun-message-app.git"
   },
   "build": {
-    "productName": "readyfun app",
+    "productName": "레디펀 메시지 작성 프로그램",
     "asar": true,
     "appId": "com.github.i33w.readyfun-message-app",
     "win": {
@@ -23,7 +23,7 @@
       "oneClick": true,
       "perMachine": true,
       "language": 1042,
-      "shortcutName": "readyfun app",
+      "shortcutName": "레디펀 메시지 작성 프로그램",
       "include": "./installer.nsh"
     },
     "files": [
