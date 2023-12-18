@@ -14,8 +14,8 @@ type readyFunData = {
   실지급액: any;
   연락처: any;
   계좌정보: any;
-  납입회차: any;
-  납입일: any;
+  납입회차?: any;
+  납입일?: any;
   만기일: any;
 };
 type readyFunDataList = Array<readyFunData>;
@@ -31,8 +31,8 @@ function valid(list: readyFunData) {
   if (!list["실지급액"]) return "실지급액";
   if (!list["연락처"]) return "연락처";
   if (!list["계좌정보"]) return "계좌정보";
-  if (!list["납입회차"]) return "납입회차";
-  if (!list["납입일"]) return "납입일";
+  // if (!list["납입회차"]) return "납입회차";
+  // if (!list["납입일"]) return "납입일";
   if (!list["만기일"]) return "만기일";
   return "";
 }
@@ -139,12 +139,16 @@ function App() {
           // 일자 Date type으로 수정 & 금액 Number type으로 수정
           const typedList = json.map((item) => {
             item["만기일"] = excelSerialDateToJSDate(item["만기일"]);
-            item["일자"] = new Date(
-              Number(new Date().getFullYear().toString().substring(0, 2)) +
-              item["일자"].split("/")[0],
-              item["일자"].split("/")[1] - 1,
-              item["일자"].split("/")[2]
-            );
+            if ((typeof item['일자']) === 'string') {
+              item["일자"] = new Date(
+                Number(new Date().getFullYear().toString().substring(0, 2)) +
+                item["일자"].split("/")[0],
+                item["일자"].split("/")[1] - 1,
+                item["일자"].split("/")[2]
+              );
+            } else {
+              item["일자"] = excelSerialDateToJSDate(item["일자"]);
+            }
             item["수익금"] = Number(
               item["수익금"].replaceAll(",", "").split("원")[0]
             );
@@ -156,41 +160,53 @@ function App() {
             );
             return item;
           });
-          // 계약번호 중복 제거
-          const idList = [...new Set(typedList?.map((item) => item["계약번호"]))];
-          // 각 계약번호 별 최신 일자 데이터 추출
-          const filteredList = idList.map((id) => {
-            const sortedList = typedList
-              .filter((item) => item["계약번호"] === id)
-              .sort((a, b) => b["일자"].getTime() - a["일자"].getTime());
+          if (json[0]['납입회차']) {
+            // 계약번호 중복 제거
+            const idList = [...new Set(typedList?.map((item) => item["계약번호"]))];
+            // 각 계약번호 별 최신 일자 데이터 추출
+            const filteredList = idList.map((id) => {
+              const sortedList = typedList
+                .filter((item) => item["계약번호"] === id)
+                .sort((a, b) => b["일자"].getTime() - a["일자"].getTime());
 
-            let temp = sortedList[0];
+              let temp = sortedList[0];
 
-            Array(sortedList.length - 1)
-              .fill(null)
-              .map((val: readyFunData, idx: number) => {
-                if (idx !== sortedList.length)
-                  temp["수익금"] = temp["수익금"] + sortedList[idx + 1]["수익금"];
-                if (idx !== sortedList.length)
-                  temp["실지급액"] =
-                    temp["실지급액"] + sortedList[idx + 1]["실지급액"];
-                if (idx !== sortedList.length)
-                  temp["투자금액"] =
-                    temp["투자금액"] + sortedList[idx + 1]["투자금액"];
-                return "";
-              });
+              Array(sortedList.length - 1)
+                .fill(null)
+                .map((val: readyFunData, idx: number) => {
+                  if (idx !== sortedList.length)
+                    temp["수익금"] = temp["수익금"] + sortedList[idx + 1]["수익금"];
+                  if (idx !== sortedList.length)
+                    temp["실지급액"] =
+                      temp["실지급액"] + sortedList[idx + 1]["실지급액"];
+                  if (idx !== sortedList.length)
+                    temp["투자금액"] =
+                      temp["투자금액"] + sortedList[idx + 1]["투자금액"];
+                  return "";
+                });
 
-            return temp;
-          });
-          const formattedList = filteredList.map<any>((list) => {
-            list["일자"] = list["일자"].toISOString().split("T")[0];
-            list["만기일"] = list["만기일"].toISOString().split("T")[0];
-            list["수익금"] = list["수익금"].toLocaleString();
-            list["실지급액"] = list["실지급액"].toLocaleString();
-            list["투자금액"] = list["투자금액"].toLocaleString();
-            return list;
-          });
-          setList(formattedList); 
+              return temp;
+            });
+            const formattedList = filteredList.map<any>((list) => {
+              list["일자"] = list["일자"].toISOString().split("T")[0];
+              list["만기일"] = list["만기일"].toISOString().split("T")[0];
+              list["수익금"] = list["수익금"].toLocaleString();
+              list["실지급액"] = list["실지급액"].toLocaleString();
+              list["투자금액"] = list["투자금액"].toLocaleString();
+              return list;
+            });
+            setList(formattedList);
+          } else {
+            const formattedList = typedList.map<any>((list) => {
+              list["일자"] = list["일자"].toISOString().split("T")[0];
+              list["만기일"] = list["만기일"].toISOString().split("T")[0];
+              list["수익금"] = list["수익금"].toLocaleString();
+              list["실지급액"] = list["실지급액"].toLocaleString();
+              list["투자금액"] = list["투자금액"].toLocaleString();
+              return list;
+            });
+            setList(formattedList);
+          }
         } catch (error: any) {
           if (error.toString().includes('File is password-protected')) {
             alert('암호화된 파일입니다.');
@@ -398,21 +414,36 @@ function App() {
       const selected = searchedList?.filter(
         (val) => val["계약번호"] === e.target.value
       )[0];
-      const msg = `${selected["투자자명"]}님 안녕하세요.
+      const msg = selected["납입회차"] ? `${selected["투자자명"]}님 안녕하세요.
 레디펀 운영현황 알려드립니다.
 현재 (${new Date().getMonth() + 1}월 ${new Date().getDate()}일 기준)
 
 - 가입상품: ${selected["투자상품"]}
-- 만기일: ${
-        selected["만기일"].split("-")[0] +
+- 만기일: ${selected["만기일"].split("-")[0] +
         "년 " +
         selected["만기일"].split("-")[1] +
         "월 " +
         selected["만기일"].split("-")[2] +
         "일"
-      }
+        }
 - 총 투자금액: ${selected["투자금액"]} 원
 - 납입회차: ${selected["납입회차"].replace("회차", " 회차")}
+- 수익금: ${selected["수익금"]} 원
+- 실지급액: ${selected["실지급액"]} 원`
+        :
+        `${selected["투자자명"]}님 안녕하세요.
+레디펀 운영현황 알려드립니다.
+현재 (${new Date().getMonth() + 1}월 ${new Date().getDate()}일 기준)
+
+- 가입상품: ${selected["투자상품"]}
+- 만기일: ${selected["만기일"].split("-")[0] +
+        "년 " +
+        selected["만기일"].split("-")[1] +
+        "월 " +
+        selected["만기일"].split("-")[2] +
+        "일"
+        }
+- 투자금액: ${selected["투자금액"]} 원
 - 수익금: ${selected["수익금"]} 원
 - 실지급액: ${selected["실지급액"]} 원`;
       const addText = document.getElementById(
